@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0b57d0;
+  --color-primary-container: #d3e3fd;
+  --color-on-primary-container: #041e49;
+  --color-secondary: #00639b;
+  --color-secondary-container: #cce5ff;
+  --color-on-secondary-container: #001d31;
+  --color-tertiary: #146c2e;
+  --color-tertiary-container: #c4eed0;
+  --color-on-tertiary-container: #002106;
+  --color-error: #b3261e;
+  --color-error-container: #f9dedc;
+  --color-on-error-container: #410e0b;
+  --color-background: #fef7ff;
+  --color-on-background: #1d1b20;
+  --color-surface: #fef7ff;
+  --color-on-surface: #1d1b20;
+  --color-surface-variant: #e7e0ec;
+  --color-on-surface-variant: #49454f;
+  --color-outline: #79747e;
+  --color-outline-variant: #cac4d0;
+  --font-sans: 'Roboto', 'Inter', system-ui, sans-serif;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+.high-contrast {
+  --color-primary: #fff !important;
+  --color-primary-container: #000 !important;
+  --color-on-primary-container: #fff !important;
+  --color-secondary: #fff !important;
+  --color-secondary-container: #000 !important;
+  --color-on-secondary-container: #fff !important;
+  --color-tertiary: #fff !important;
+  --color-tertiary-container: #000 !important;
+  --color-on-tertiary-container: #fff !important;
+  --color-background: #000 !important;
+  --color-on-background: #fff !important;
+  --color-surface: #000 !important;
+  --color-on-surface: #fff !important;
+  --color-surface-variant: #222 !important;
+  --color-on-surface-variant: #fff !important;
+  --color-outline: #fff !important;
+  --color-outline-variant: #555 !important;
+  --color-error: #ffb4ab !important;
+  --color-error-container: #93000a !important;
+  --color-on-error-container: #ffdad6 !important;
+}
+
+.high-contrast * {
+  border-color: #fff !important;
+}
