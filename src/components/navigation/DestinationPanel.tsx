@@ -17,14 +17,14 @@ export default function DestinationPanel() {
   const hasCongestionOnRoute = activePath.some(node => (congestion[node] || 1) > 1.8);
 
   return (
-    <div className="absolute bottom-4 left-0 w-full px-4 z-40 pb-2">
-      <div className="bg-surface rounded-3xl shadow-xl border border-outline-variant/30 p-4">
+    <div className="w-full px-4 pt-3 pb-5 bg-gradient-to-b from-black/40 to-black/60">
+      <div className="bg-white/15 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-4">
         
         {/* Header / Current Status */}
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-lg font-bold text-on-surface">Where to?</h2>
-            <p className="text-xs text-on-surface-variant">Gate A • Level 1</p>
+            <h2 className="text-lg font-bold text-white">Where to?</h2>
+            <p className="text-xs text-white/70">Gate A • Level 1</p>
           </div>
           {destination && (
             <div className="flex items-center gap-2 bg-primary-container text-on-primary-container px-3 py-1.5 rounded-full">
@@ -54,7 +54,7 @@ export default function DestinationPanel() {
                   'flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-200',
                   isSelected 
                     ? 'bg-primary text-white shadow-md transform scale-105' 
-                    : 'bg-surface-variant text-on-surface-variant hover:bg-outline-variant/50'
+                    : 'bg-white/10 text-white/80 border border-white/20 hover:bg-white/20'
                 )}
               >
                 <dest.icon size={24} strokeWidth={isSelected ? 2.5 : 2} className="mb-1" />

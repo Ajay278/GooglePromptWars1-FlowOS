@@ -27,19 +27,22 @@ export default function NavigatePage() {
   }, [congestion, setCongestion]);
 
   return (
-    <div className="relative h-full w-full bg-[#121212] overflow-hidden">
-      {/* Full bleed map */}
-      <StadiumMap />
-      
-      {/* Floating UI */}
-      <DestinationPanel />
-      
-      {/* Top Header Overlay */}
-      <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/60 to-transparent z-40 pointer-events-none">
-        <h1 className="text-2xl font-bold text-white drop-shadow-md">Stadium Nav</h1>
-        <p className="text-sm font-medium text-white/90 drop-shadow-md">
-          {destination ? 'Live routing active' : 'Select a destination'}
-        </p>
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      {/* Map zone — always visible top half */}
+      <div className="relative flex-1 min-h-0 bg-[#121212]">
+        <StadiumMap />
+        {/* Top Header Overlay */}
+        <div className="absolute top-0 left-0 w-full p-4 bg-gradient-to-b from-black/60 to-transparent z-40 pointer-events-none">
+          <h1 className="text-2xl font-bold text-white drop-shadow-md">Stadium Nav</h1>
+          <p className="text-sm font-medium text-white/90 drop-shadow-md">
+            {destination ? 'Live routing active' : 'Select a destination'}
+          </p>
+        </div>
+      </div>
+
+      {/* Panel zone — fixed bottom, never overlaps map */}
+      <div className="shrink-0">
+        <DestinationPanel />
       </div>
     </div>
   );

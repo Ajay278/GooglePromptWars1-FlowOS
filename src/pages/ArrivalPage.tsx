@@ -32,26 +32,26 @@ export default function ArrivalPage() {
   }, []);
 
   return (
-    <div className="flex flex-col bg-surface min-h-full pb-28">
+    <div className="flex flex-col min-h-full pb-5">
 
       {/* Header */}
       <header className="flex items-center gap-3 px-4 pt-5 pb-4">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-surface-variant transition-colors"
+          className="p-2 rounded-full bg-white/15 backdrop-blur-sm hover:bg-white/25 transition-colors"
           aria-label="Go back"
         >
-          <ArrowLeft size={22} className="text-on-surface" />
+          <ArrowLeft size={22} className="text-white" />
         </button>
         <div>
-          <h1 className="text-xl font-black text-on-surface">Arrival Planner</h1>
-          <p className="text-xs text-on-surface-variant">FlowOS Stadium · Event Day</p>
+          <h1 className="text-xl font-black text-white drop-shadow-md">Arrival Planner</h1>
+          <p className="text-xs text-white/70">FlowOS Stadium · Event Day</p>
         </div>
       </header>
 
       {/* Live Status Bar */}
-      <div className="mx-4 mb-4 bg-primary-container rounded-2xl px-4 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2 text-on-primary-container">
+      <div className="mx-4 mb-4 bg-white/15 backdrop-blur-md rounded-2xl px-4 py-3 flex justify-between items-center border border-white/20">
+        <div className="flex items-center gap-2 text-white">
           <Clock size={16} />
           <span className="text-sm font-bold">ETA: {eta} min</span>
         </div>
@@ -70,8 +70,8 @@ export default function ArrivalPage() {
             className={cn(
               'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap border transition-all',
               activeTab === tab.id
-                ? 'bg-on-surface text-surface border-on-surface'
-                : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:bg-surface-variant'
+                ? 'bg-white/30 text-white border-white/40'
+                : 'bg-white/10 text-white/60 border-white/20 hover:bg-white/20'
             )}
           >
             <tab.icon size={14} aria-hidden="true" />
@@ -89,8 +89,8 @@ export default function ArrivalPage() {
             <ArrivalMap />
 
             {/* Step-by-step guide */}
-            <div className="bg-surface-variant rounded-3xl p-4 border border-outline-variant/30">
-              <h2 className="font-bold text-sm uppercase tracking-wider text-on-surface-variant mb-3">Your Arrival Steps</h2>
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/20">
+              <h2 className="font-bold text-sm uppercase tracking-wider text-white/60 mb-3">Your Arrival Steps</h2>
               {[
                 { step: 1, title: 'Leave by 5:45 PM', sub: 'Traffic heavy on Main Ave · Take bypass route', color: 'bg-primary text-white' },
                 { step: 2, title: 'Board Metro Blue Line', sub: 'Departs Central Station at 5:52 PM', color: 'bg-secondary text-white' },
@@ -102,8 +102,8 @@ export default function ArrivalPage() {
                     {step}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-sm text-on-surface">{title}</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">{sub}</p>
+                    <p className="font-bold text-sm text-white">{title}</p>
+                    <p className="text-xs text-white/60 mt-0.5">{sub}</p>
                   </div>
                   <ChevronRight size={16} className="text-on-surface-variant mt-1 shrink-0" />
                 </div>

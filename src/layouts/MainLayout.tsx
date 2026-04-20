@@ -9,8 +9,8 @@ export default function MainLayout() {
   const { highContrast } = useAppStore();
 
   return (
-    <div className={`flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-surface relative shadow-xl overflow-hidden ${highContrast ? 'high-contrast' : ''}`}>
-      <main className="flex-1 overflow-y-auto pb-20 no-scrollbar" role="main" aria-label="Main content">
+    <div className={`flex flex-col h-[100dvh] w-full max-w-md mx-auto app-sports-bg relative shadow-2xl overflow-hidden rounded-none ${highContrast ? 'high-contrast' : ''}`}>
+      <main className="flex-1 overflow-y-auto no-scrollbar" role="main" aria-label="Main content">
         <ErrorBoundary>
           <Outlet />
         </ErrorBoundary>

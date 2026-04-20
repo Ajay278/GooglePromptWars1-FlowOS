@@ -1,0 +1,10 @@
+.gcloudignore
+.git
+.gitignore
+node_modules/
+dist/
+playwright-report/
+test-results/
+# Ignore other projects if they are in the parent folder
+../
+pit-wall-v2/

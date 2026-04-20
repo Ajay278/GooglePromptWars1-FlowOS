@@ -38,12 +38,12 @@ export default function Services() {
   const fastestServiceId = filteredServices.length > 0 ? filteredServices[0].id : null;
 
   return (
-    <div className="flex flex-col bg-surface p-4 pb-28 min-h-full">
+    <div className="flex flex-col p-4 pb-5 min-h-full">
       {/* Header */}
       <header className="pt-2 mb-4 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Services</h1>
-          <p className="text-sm text-on-surface-variant">Find food and restrooms near you</p>
+          <h1 className="text-2xl font-bold text-white drop-shadow-md">Services</h1>
+          <p className="text-sm text-white/70">Find food and restrooms near you</p>
         </div>
         {cart.length > 0 && (
           <button className="relative p-2 bg-primary-container text-on-primary-container rounded-full">
@@ -64,8 +64,8 @@ export default function Services() {
             className={cn(
               'px-4 py-2 rounded-full text-sm font-semibold capitalize whitespace-nowrap border transition-colors',
               activeFilter === filter 
-                ? 'bg-on-surface text-surface border-on-surface' 
-                : 'bg-surface text-on-surface-variant border-outline-variant/50 hover:bg-surface-variant'
+                ? 'bg-white/30 text-white border-white/40' 
+                : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20'
             )}
           >
             {filter}
@@ -74,13 +74,13 @@ export default function Services() {
       </div>
 
       <div className="flex justify-between items-center mb-4 px-1">
-        <span className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">
+        <span className="text-sm font-bold text-white/60 uppercase tracking-wider">
           {filteredServices.length} Results
         </span>
         <select 
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as 'wait' | 'distance')}
-          className="bg-transparent text-sm font-bold text-primary outline-none cursor-pointer"
+          className="bg-white/10 text-white text-sm font-bold outline-none cursor-pointer rounded-lg px-2 py-1 border border-white/20"
         >
           <option value="wait">Sort by Lowest Wait</option>
           <option value="distance">Sort by Distance</option>
@@ -90,7 +90,7 @@ export default function Services() {
       {/* List */}
       <div className="flex flex-col gap-3">
         {simulatedError ? (
-          <div className="bg-surface-variant rounded-3xl p-8 text-center border border-outline-variant/30 animate-in fade-in duration-500">
+          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 text-center border border-white/20 animate-in fade-in duration-500">
             <div className="bg-error-container/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="text-error opacity-60" size={32} />
             </div>

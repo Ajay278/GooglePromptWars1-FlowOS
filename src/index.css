@@ -6,9 +6,9 @@
   --color-primary: #0b57d0;
   --color-primary-container: #d3e3fd;
   --color-on-primary-container: #041e49;
-  --color-secondary: #00639b;
-  --color-secondary-container: #cce5ff;
-  --color-on-secondary-container: #001d31;
+  --color-secondary: #6750a4;
+  --color-secondary-container: #e8def8;
+  --color-on-secondary-container: #21005d;
   --color-tertiary: #146c2e;
   --color-tertiary-container: #c4eed0;
   --color-on-tertiary-container: #002106;
@@ -61,4 +61,29 @@
 
 .high-contrast * {
   border-color: #fff !important;
+}
+
+.app-sports-bg {
+  background-image: url('/sports-bg.png');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.app-sports-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg,
+    rgba(8, 40, 100, 0.55) 0%,
+    rgba(0, 0, 0, 0.45) 60%,
+    rgba(11, 87, 208, 0.35) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-sports-bg > * {
+  position: relative;
+  z-index: 1;
 }

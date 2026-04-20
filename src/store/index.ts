@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { NodeId, findOptimalRoute, WeatherState } from '../utils/routingEngine';
 
 type ArrivalTab = 'transit' | 'parking' | 'ticket';
+export type EventStatus = 'pre-game' | 'live' | 'post-game';
 
 export interface ServiceItem {
   id: string;
@@ -43,6 +46,10 @@ interface AppState {
   setArrivalTab: (tab: ArrivalTab) => void;
   gateWaitTime: number;
   setGateWaitTime: (time: number) => void;
+
+  // Event Lifecycle
+  eventStatus: EventStatus;
+  setEventStatus: (status: EventStatus) => void;
   
   // Emergency State
   isEmergencyMode: boolean;
@@ -60,6 +67,9 @@ interface AppState {
   activePath: NodeId[];
   eta: number;
   calculateRoute: () => void;
+
+  // Real-Time Firebase Sync
+  syncWithFirestore: () => void;
 
   // Services State
   services: ServiceItem[];
@@ -108,6 +118,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setArrivalTab: (tab) => set({ arrivalTab: tab }),
   gateWaitTime: 12,
   setGateWaitTime: (time) => set({ gateWaitTime: time }),
+
+  // Event Lifecycle
+  eventStatus: 'live',
+  setEventStatus: (status) => set({ eventStatus: status }),
   
   // Emergency State
   isEmergencyMode: false,
@@ -136,6 +150,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!dest) return;
     const result = findOptimalRoute('entrance', dest, get().congestion, get().weather);
     set({ activePath: result.path, eta: result.estimatedTime });
+  },
+
+  // Firebase Real-time sync engine
+  syncWithFirestore: () => {
+    if (!db) return; // If .env keys are missing, stay in local mock mode
+    
+    // 1. Listen for global congestion updates
+    const congestionRef = doc(db, 'stadium_state', 'congestion');
+    onSnapshot(congestionRef, (docSnap) => {
+      if (docSnap.exists()) {
+        get().setCongestion(docSnap.data() as Record<NodeId, number>);
+      }
+    });
+
+    // 2. Listen for Admin Event Lifecycle overrides
+    const lifecycleRef = doc(db, 'stadium_state', 'lifecycle');
+    onSnapshot(lifecycleRef, (docSnap) => {
+      if (docSnap.exists() && docSnap.data().status) {
+        set({ eventStatus: docSnap.data().status });
+      }
+    });
   },
 
   // Services State
@@ -170,10 +205,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ weather });
     if (get().destination) get().calculateRoute();
   },
-  triggerCrowdSurge: (nodeId) => set((state) => {
-    const newCongestion = { ...state.congestion, [nodeId]: 3.5 };
-    return { congestion: newCongestion };
-  }),
+  triggerCrowdSurge: (nodeId) => {
+    set((state) => {
+      const newCongestion = { ...state.congestion, [nodeId]: 3.5 };
+      
+      // If DB is wired up, push this surge to the cloud so all 100k users see it instantly
+      if (db) {
+        setDoc(doc(db, 'stadium_state', 'congestion'), newCongestion, { merge: true });
+      }
+
+      return { congestion: newCongestion };
+    });
+  },
 
   // Lost & Found State
   lostFoundItems: [],

@@ -1,13 +1,19 @@
-import { Map, ShieldAlert, Users, Utensils, CloudSun, CloudRain, Sun, Navigation2, Activity } from 'lucide-react';
+import { Map, ShieldAlert, Users, Utensils, CloudSun, CloudRain, Sun, Navigation2, Activity, MapPin } from 'lucide-react';
 import { cn } from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { triggerHaptic } from '../utils/a11y';
 import NotificationsPanel from '../components/NotificationsPanel';
+import { useState } from 'react';
+import SmartExitModal from '../components/transit/SmartExitModal';
+import FeedbackModal from '../components/feedback/FeedbackModal';
+import { MessageSquarePlus } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { weather, reducedMotion, congestion } = useAppStore();
+  const { weather, reducedMotion, congestion, eventStatus } = useAppStore();
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const quickActions = [
     { name: 'Navigate', icon: Map, color: 'bg-primary-container text-on-primary-container', path: '/navigate' },
@@ -26,12 +32,12 @@ export default function Home() {
   const currentW = weatherConfig[weather];
 
   return (
-    <div className="flex flex-col h-full bg-surface p-4 gap-6 overflow-y-auto pb-24 no-scrollbar">
+    <div className="flex flex-col h-full p-4 gap-5 overflow-y-auto pb-5 no-scrollbar">
       {/* App Bar */}
       <header className="flex justify-between items-center pt-2">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">FlowOS</h1>
-          <p className="text-sm text-on-surface-variant">Gate A • Section 112</p>
+          <h1 className="text-2xl font-bold text-white drop-shadow-md">FlowOS</h1>
+          <p className="text-sm text-white/70">Gate A • Section 112</p>
         </div>
         <NotificationsPanel />
       </header>
@@ -51,32 +57,51 @@ export default function Home() {
         </div>
       )}
 
-      {/* Arrival Planner Entry Card */}
-      <button
-        onClick={() => { triggerHaptic('light'); navigate(arrivalPath); }}
-        aria-label="Open Arrival Planner"
-        className={`w-full text-left bg-gradient-to-r from-primary to-secondary rounded-3xl p-4 shadow-md flex items-center gap-4 transition-transform ${reducedMotion ? '' : 'active:scale-[0.98]'}`}
-      >
-        <div className="bg-white/20 p-3 rounded-2xl shrink-0">
-          <Navigation2 size={28} className="text-white" aria-hidden="true" />
-        </div>
-        <div className="flex-1">
-          <p className="text-white font-black text-base">Plan Your Arrival</p>
-          <p className="text-white/80 text-xs font-medium mt-0.5">Traffic · Transit · Parking · Ticket</p>
-        </div>
-        <div className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
-          Open →
-        </div>
-      </button>
+      {/* Dynamic Lifecycle Card (Arrival vs Exit) */}
+      {eventStatus === 'post-game' ? (
+        <button
+          onClick={() => { triggerHaptic('light'); setIsExitModalOpen(true); }}
+          aria-label="Open Smart Exit Planner"
+          className={`w-full text-left bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl p-4 shadow-md flex items-center gap-4 transition-transform ${reducedMotion ? '' : 'active:scale-[0.98]'}`}
+        >
+          <div className="bg-white/20 p-3 rounded-2xl shrink-0">
+            <MapPin size={28} className="text-white" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-black text-base">Plan Your Exit</p>
+            <p className="text-white/80 text-xs font-medium mt-0.5">Live Transit · Uber Surge · Rewards</p>
+          </div>
+          <div className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full shrink-0 animate-pulse">
+            View →
+          </div>
+        </button>
+      ) : (
+        <button
+          onClick={() => { triggerHaptic('light'); navigate(arrivalPath); }}
+          aria-label="Open Arrival Planner"
+          className={`w-full text-left bg-gradient-to-r from-primary to-secondary rounded-3xl p-4 shadow-md flex items-center gap-4 transition-transform ${reducedMotion ? '' : 'active:scale-[0.98]'}`}
+        >
+          <div className="bg-white/20 p-3 rounded-2xl shrink-0">
+            <Navigation2 size={28} className="text-white" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-black text-base">Plan Your Arrival</p>
+            <p className="text-white/80 text-xs font-medium mt-0.5">Traffic · Transit · Parking · Ticket</p>
+          </div>
+          <div className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+            Open →
+          </div>
+        </button>
+      )}
 
       {/* Global Heatmap Overview */}
-      <section className="bg-surface-variant rounded-3xl p-5 border border-outline-variant/30">
+      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 border border-white/20 shadow-lg">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="text-primary" size={20} />
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+            <Activity className="text-blue-300" size={20} />
             Live Congestion Map
           </h2>
-          <span className="text-xs font-medium bg-green-200 text-green-900 px-2 py-1 rounded-full">Live</span>
+          <span className="text-xs font-medium bg-green-400/30 text-green-200 border border-green-400/40 px-2 py-1 rounded-full">Live</span>
         </div>
         
         <div className="grid grid-cols-2 gap-2">
@@ -86,10 +111,10 @@ export default function Home() {
             if (level > 2.5) color = 'bg-red-500';
 
             return (
-              <div key={nodeId} className="flex items-center justify-between bg-surface p-2 rounded-xl">
-                <span className="text-[10px] font-bold capitalize text-on-surface truncate pr-1">{nodeId.replace('_', ' ')}</span>
+              <div key={nodeId} className="flex items-center justify-between bg-white/10 border border-white/10 p-2 rounded-xl">
+                <span className="text-[10px] font-bold capitalize text-white/90 truncate pr-1">{nodeId.replace('_', ' ')}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[9px] font-black text-on-surface-variant">{level.toFixed(1)}x</span>
+                  <span className="text-[9px] font-black text-white/60">{level.toFixed(1)}x</span>
                   <div className={`w-2.5 h-2.5 rounded-full ${color}`}></div>
                 </div>
               </div>
@@ -99,20 +124,20 @@ export default function Home() {
       </section>
 
       {/* Weather Widget */}
-      <section className="bg-secondary-container rounded-3xl p-5 shadow-sm border border-outline-variant/20 flex items-center justify-between">
+      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 shadow-lg border border-white/20 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-on-secondary-container opacity-80">Stadium Weather</p>
+          <p className="text-sm font-medium text-white/70">Stadium Weather</p>
           <div className="flex items-end gap-2 mt-1">
-            <h2 className="text-3xl font-bold text-on-secondary-container">{currentW.temp}</h2>
-            <p className="text-sm font-medium text-on-secondary-container pb-1">{currentW.label}</p>
+            <h2 className="text-3xl font-bold text-white">{currentW.temp}</h2>
+            <p className="text-sm font-medium text-white/80 pb-1">{currentW.label}</p>
           </div>
         </div>
-        <currentW.icon size={48} className="text-on-secondary-container opacity-90" strokeWidth={1.5} />
+        <currentW.icon size={48} className="text-white/80" strokeWidth={1.5} />
       </section>
 
       {/* Quick Actions */}
       <section aria-labelledby="quick-actions-title">
-        <h2 id="quick-actions-title" className="text-lg font-semibold mb-4 px-1">Quick Actions</h2>
+        <h2 id="quick-actions-title" className="text-lg font-semibold mb-4 px-1 text-white drop-shadow">Quick Actions</h2>
         <div className="grid grid-cols-2 gap-4" role="group">
           {quickActions.map((action) => (
             <button
@@ -135,6 +160,26 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* Floating Feedback Button */}
+      <button
+        onClick={() => { triggerHaptic('light'); setIsFeedbackOpen(true); }}
+        className="absolute bottom-6 right-4 z-50 bg-white/10 backdrop-blur-xl border border-white/20 p-3.5 rounded-full shadow-xl hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center group"
+        aria-label="Provide Feedback"
+      >
+        <MessageSquarePlus size={24} className="text-white drop-shadow-md group-hover:text-primary-300 transition-colors" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-white font-bold text-sm">
+          <span className="pl-2 pr-1">Feedback</span>
+        </span>
+      </button>
+
+      {/* Modals */}
+      {isExitModalOpen && (
+        <SmartExitModal onClose={() => setIsExitModalOpen(false)} />
+      )}
+      {isFeedbackOpen && (
+        <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />
+      )}
     </div>
   );
 }

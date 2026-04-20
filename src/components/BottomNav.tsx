@@ -18,7 +18,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav role="navigation" aria-label="Primary navigation" className="absolute bottom-0 w-full h-20 bg-surface border-t border-outline-variant/30 px-2 pb-2 pt-2 flex justify-around items-center z-50">
+    <nav role="navigation" aria-label="Primary navigation" className="absolute bottom-0 w-full h-20 bg-white/20 backdrop-blur-xl border-t border-white/20 px-2 pb-2 pt-2 flex justify-around items-center z-50">
       {navItems.map((item) => (
         <NavLink
           key={item.name}
@@ -29,8 +29,8 @@ export default function BottomNav() {
             cn(
               'flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-all',
               isActive
-                ? 'bg-secondary-container text-on-secondary-container font-bold'
-                : 'text-on-surface-variant hover:bg-surface-variant'
+                ? 'bg-white/30 text-white font-bold'
+                : 'text-white/60 hover:bg-white/10 hover:text-white'
             )
           }
         >

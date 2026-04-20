@@ -50,7 +50,7 @@ export default function Safety() {
   const isEvacuating = emergencyType === 'evacuate';
 
   return (
-    <div className="relative h-[100dvh] w-full bg-[#121212]">
+    <div className="relative h-[100dvh] w-full">
 
       {/* Map Layer — fills top 48% */}
       <div className="absolute inset-0 bottom-[52%] z-10">
@@ -60,7 +60,7 @@ export default function Safety() {
       {/* Bottom Panel — always visible scrollable sheet */}
       {!isEvacuating && !isEmergencyMode && (
         <div className="absolute bottom-0 left-0 w-full h-[52%] flex flex-col">
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-20 space-y-3 no-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-5 space-y-3 no-scrollbar">
             <MemberList />
             <LostFoundPanel onAnnounce={handleLostFoundAnnouncement} />
           </div>

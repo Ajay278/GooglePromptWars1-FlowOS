@@ -48,7 +48,7 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
   };
 
   return (
-    <div className="bg-surface rounded-3xl border border-outline-variant/30 shadow-sm overflow-hidden">
+    <div className="bg-white/15 backdrop-blur-xl rounded-3xl border border-white/20 shadow-xl overflow-hidden">
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(v => !v)}
@@ -61,15 +61,15 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
             <Package size={20} />
           </div>
           <div>
-            <p className="font-bold text-sm text-on-surface">Lost & Found</p>
-            <p className="text-xs text-on-surface-variant">
+            <p className="font-bold text-sm text-white">Lost & Found</p>
+            <p className="text-xs text-white/70">
               {lostFoundItems.length > 0
                 ? `${lostFoundItems.length} item${lostFoundItems.length > 1 ? 's' : ''} reported today`
                 : 'Report a found item'}
             </p>
           </div>
         </div>
-        {isExpanded ? <ChevronUp size={18} className="text-on-surface-variant" /> : <ChevronDown size={18} className="text-on-surface-variant" />}
+        {isExpanded ? <ChevronUp size={18} className="text-white/60" /> : <ChevronDown size={18} className="text-white/60" />}
       </button>
 
       {/* Expanded Panel */}
@@ -77,8 +77,8 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
         <div id="lost-found-panel" className="px-4 pb-4 space-y-4">
 
           {/* Submit Form */}
-          <div className="bg-surface-variant rounded-2xl p-3 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">I found something</p>
+          <div className="bg-white/10 border border-white/10 rounded-2xl p-3 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-white/70">I found something</p>
 
             {/* Item type chips */}
             <div className="flex flex-wrap gap-2">
@@ -90,7 +90,7 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                     selectedItem === preset
                       ? 'bg-amber-500 text-white border-amber-500'
-                      : 'bg-surface text-on-surface-variant border-outline-variant/40 hover:bg-amber-50'
+                      : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
                   }`}
                 >
                   {preset}
@@ -100,14 +100,14 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
 
             {/* Drop-off location */}
             <div>
-              <label htmlFor="dropoff-select" className="text-xs font-bold text-on-surface-variant mb-1 block">
+              <label htmlFor="dropoff-select" className="text-xs font-bold text-white/70 mb-1 block">
                 Dropping off at
               </label>
               <select
                 id="dropoff-select"
                 value={selectedLocation}
                 onChange={e => setSelectedLocation(e.target.value)}
-                className="w-full bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm font-medium text-on-surface outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none"
               >
                 {SUBMISSION_POINTS.map(pt => (
                   <option key={pt} value={pt}>{pt}</option>
@@ -127,7 +127,7 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
                 className={`w-full font-bold py-3 rounded-xl text-sm transition-all active:scale-95 ${
                   selectedItem
                     ? 'bg-amber-500 text-white shadow-sm hover:bg-amber-600'
-                    : 'bg-outline-variant/30 text-on-surface-variant cursor-not-allowed'
+                    : 'bg-white/5 border border-white/10 text-white/40 cursor-not-allowed'
                 }`}
               >
                 📢 Submit & Broadcast Announcement
@@ -138,18 +138,18 @@ export default function LostFoundPanel({ onAnnounce }: Props) {
           {/* Recent submissions log */}
           {lostFoundItems.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">Recent Found Items</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-white/70 mb-2">Recent Found Items</p>
               <div className="space-y-2">
                 {[...lostFoundItems].reverse().map(item => (
-                  <div key={item.id} className="flex items-start gap-3 bg-surface-variant rounded-xl p-3">
-                    <Package size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                  <div key={item.id} className="flex items-start gap-3 bg-white/10 border border-white/10 rounded-xl p-3">
+                    <Package size={16} className="text-amber-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-on-surface">{item.description}</p>
-                      <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+                      <p className="text-sm font-bold text-white">{item.description}</p>
+                      <p className="text-xs text-white/70 flex items-center gap-1 mt-0.5">
                         <MapPin size={10} /> {item.location}
                       </p>
                     </div>
-                    <span className="text-[10px] text-on-surface-variant flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-white/50 flex items-center gap-1 shrink-0">
                       <Clock size={10} /> {item.time}
                     </span>
                   </div>
