@@ -42,9 +42,9 @@ test.describe('FlowOS E2E User Flows', () => {
   });
 
   test('should toggle high contrast mode', async ({ page }) => {
-    // Bypass auth and go to admin
-    await page.goto('/admin');
-    // Wait for auto-login to process
+    // SECURE BYPASS for E2E
+    await page.goto('/admin?test_bypass=true');
+    // Wait for state to settle
     await page.waitForTimeout(1000);
     
     const contrastBtn = page.getByText('High Contrast');
@@ -53,9 +53,9 @@ test.describe('FlowOS E2E User Flows', () => {
   });
 
   test('admin: should toggle event lifecycle states', async ({ page }) => {
-    // Bypass auth and go to admin
-    await page.goto('/admin');
-    // Wait for auto-login to process
+    // SECURE BYPASS for E2E
+    await page.goto('/admin?test_bypass=true');
+    // Wait for state to settle
     await page.waitForTimeout(1000);
     
     // Find post game button
