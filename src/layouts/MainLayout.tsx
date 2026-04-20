@@ -7,12 +7,13 @@ import { useAppStore } from '../store';
 
 import { useEffect } from 'react';
 
-export default function MainLayout() {
-  const { highContrast, syncWithFirestore } = useAppStore();
+import { useStadiumData } from '../hooks/useStadiumData';
 
-  useEffect(() => {
-    syncWithFirestore();
-  }, []);
+export default function MainLayout() {
+  const { highContrast } = useAppStore();
+  
+  // Initialize Global Stadium Data Sync (Zod Validated)
+  useStadiumData();
 
   return (
     <div className={`flex flex-col h-[100dvh] w-full max-w-md mx-auto app-sports-bg relative shadow-2xl overflow-hidden rounded-none ${highContrast ? 'high-contrast' : ''}`}>

@@ -11,15 +11,26 @@ import { MessageSquarePlus } from 'lucide-react';
 import { useEffect } from 'react';
 import { trackEvent } from '../lib/firebase';
 
+import { getStadiumInsight } from '../lib/gemini';
+
 export default function Home() {
   const navigate = useNavigate();
   const { weather, reducedMotion, congestion, eventStatus } = useAppStore();
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [aiInsight, setAiInsight] = useState("Stadium intelligence initializing...");
 
   useEffect(() => {
     trackEvent('home_view', { status: eventStatus });
-  }, [eventStatus]);
+    
+    // Generate Smart AI Insight
+    const loadInsight = async () => {
+      const avgCongestion = (Object.values(congestion).reduce((a, b) => a + b, 0) / Object.keys(congestion).length).toFixed(1);
+      const insight = await getStadiumInsight(weather, eventStatus, `${avgCongestion}x`);
+      setAiInsight(insight);
+    };
+    loadInsight();
+  }, [eventStatus, weather, congestion]);
 
   const quickActions = [
     { name: 'Navigate', icon: Map, color: 'bg-primary-container text-on-primary-container', path: '/navigate' },
@@ -48,7 +59,26 @@ export default function Home() {
         <NotificationsPanel />
       </header>
 
-      {/* Smart Suggestions Banner */}
+      {/* AI Smart Insight Engine (Google Gemini Powered) */}
+      <section className="animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="bg-gradient-to-br from-indigo-500/20 to-purple-500/20 backdrop-blur-xl border border-white/10 rounded-3xl p-4 flex items-center gap-4 relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all" />
+          <div className="bg-white/10 p-3 rounded-2xl shrink-0 border border-white/10">
+            <Activity className="text-indigo-300 animate-pulse" size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-tighter text-indigo-300">AI Stadium Insight</span>
+              <div className="w-1 h-1 bg-green-400 rounded-full animate-ping" />
+            </div>
+            <p className="text-sm font-semibold text-white/95 leading-snug italic">
+              "{aiInsight}"
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Smart Suggestions Banner (Weather) */}
       {weather !== 'clear' && (
         <div className={`rounded-2xl p-4 flex gap-3 shadow-sm ${weather === 'rain' ? 'bg-blue-100 text-blue-900' : 'bg-orange-100 text-orange-900'}`}>
           <Navigation2 size={24} className="shrink-0 mt-0.5" />

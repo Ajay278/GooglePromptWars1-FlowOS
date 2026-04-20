@@ -129,17 +129,7 @@ export const useAppStore = create<AppState>()(
         const result = findOptimalRoute('entrance', dest, get().congestion, get().weather);
         set({ activePath: result.path, eta: result.estimatedTime });
       },
-      syncWithFirestore: () => {
-        if (!db) return;
-        const congestionRef = doc(db, 'stadium_state', 'congestion');
-        onSnapshot(congestionRef, (docSnap) => {
-          if (docSnap.exists()) get().setCongestion(docSnap.data() as Record<NodeId, number>);
-        });
-        const lifecycleRef = doc(db, 'stadium_state', 'lifecycle');
-        onSnapshot(lifecycleRef, (docSnap) => {
-          if (docSnap.exists() && docSnap.data().status) set({ eventStatus: docSnap.data().status });
-        });
-      },
+      // syncWithFirestore is now handled via useStadiumData hook in MainLayout
       services: [
         { id: 's1', type: 'food', name: 'Stadium Burgers', location: 'Section 112', waitTime: 15, distance: 50 },
         { id: 's2', type: 'food', name: 'Pizza Corner', location: 'Section 115', waitTime: 5, distance: 120 },

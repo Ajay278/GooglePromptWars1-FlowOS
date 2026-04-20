@@ -31,20 +31,6 @@ export default function AdminTwin() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
 
   useEffect(() => {
-    // ELITE MULTI-FACTOR SECURE BYPASS (Only for Local E2E Tests)
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasSecretParam = urlParams.get('test_bypass') === 'true';
-    
-    const isLocalHost = typeof window !== 'undefined' && (
-      window.location.hostname === 'localhost' || 
-      window.location.hostname === '127.0.0.1'
-    );
-
-    if (isLocalHost && hasSecretParam) {
-      setUser({ displayName: 'Admin Guest', email: 'test@flowos.internal' } as User);
-      return;
-    }
-
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
