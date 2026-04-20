@@ -5,8 +5,14 @@ import EmergencyOverlay from '../components/safety/EmergencyOverlay';
 import ConnectivityManager from '../components/ConnectivityManager';
 import { useAppStore } from '../store';
 
+import { useEffect } from 'react';
+
 export default function MainLayout() {
-  const { highContrast } = useAppStore();
+  const { highContrast, syncWithFirestore } = useAppStore();
+
+  useEffect(() => {
+    syncWithFirestore();
+  }, []);
 
   return (
     <div className={`flex flex-col h-[100dvh] w-full max-w-md mx-auto app-sports-bg relative shadow-2xl overflow-hidden rounded-none ${highContrast ? 'high-contrast' : ''}`}>

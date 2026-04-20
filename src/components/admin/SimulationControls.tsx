@@ -1,6 +1,6 @@
 import { CloudSun, CloudRain, Sun, Zap } from 'lucide-react';
 import { triggerHaptic } from '../../utils/a11y';
-import { trackEvent } from '../../lib/firebase';
+import { trackEvent, db } from '../../lib/firebase';
 import { WeatherState } from '../../utils/routingEngine';
 
 interface SimulationControlsProps {
@@ -23,6 +23,22 @@ export default function SimulationControls({
     { id: 'heat', label: 'Heatwave', icon: Sun },
   ];
 
+  const handleStatusChange = async (status: string) => {
+    triggerHaptic('heavy');
+    setEventStatus(status);
+    trackEvent('admin_lifecycle', { status });
+    
+    // Push to Firestore so it persists across reloads and for all 100k users
+    if (db) {
+      try {
+        const { doc, setDoc } = await import('firebase/firestore');
+        await setDoc(doc(db, 'stadium_state', 'lifecycle'), { status }, { merge: true });
+      } catch (e) {
+        console.error("Failed to sync lifecycle", e);
+      }
+    }
+  };
+
   return (
     <>
       {/* Event Lifecycle */}
@@ -34,11 +50,7 @@ export default function SimulationControls({
             return (
               <button
                 key={status}
-                onClick={() => {
-                  triggerHaptic('heavy');
-                  setEventStatus(status);
-                  trackEvent('admin_lifecycle', { status });
-                }}
+                onClick={() => handleStatusChange(status)}
                 className={`flex-1 py-2 rounded-2xl text-xs font-bold capitalize transition-all ${
                   isActive ? 'bg-primary text-white shadow-md' : 'text-white/60 hover:text-white'
                 }`}
