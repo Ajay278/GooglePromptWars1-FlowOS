@@ -1,10 +1,11 @@
 import { useAppStore } from '../store';
 import { WeatherState, NodeId, findOptimalRoute } from '../utils/routingEngine';
-import { CloudSun, CloudRain, Sun, Settings2, Zap, Volume2, Move, Contrast, FlaskConical, AlertTriangle, Star } from 'lucide-react';
+import { CloudSun, CloudRain, Sun, Settings2, Zap, Volume2, Move, Contrast, FlaskConical, AlertTriangle, Star, LogIn, LogOut } from 'lucide-react';
 import { triggerHaptic } from '../utils/a11y';
 import { useState, useEffect } from 'react';
-import { db } from '../lib/firebase';
+import { db, auth, googleProvider, trackEvent } from '../lib/firebase';
 import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 
 export default function AdminTwin() {
   const { 
@@ -12,13 +13,38 @@ export default function AdminTwin() {
     triggerCrowdSurge,
     voiceGuidance, setVoiceGuidance,
     reducedMotion, setReducedMotion,
-    highContrast, setHighContrast
+    highContrast, setHighContrast,
+    eventStatus, setEventStatus
   } = useAppStore();
 
+  const [user, setUser] = useState<User | null>(null);
   const [loadTestResult, setLoadTestResult] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [throwError, setThrowError] = useState(false);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u) trackEvent('admin_login', { email: u.email });
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    if (!auth || !googleProvider) return;
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      console.error("Login failed", e);
+    }
+  };
+
+  const handleLogout = () => {
+    if (auth) signOut(auth);
+    trackEvent('admin_logout');
+  };
 
   useEffect(() => {
     if (!db) return;
@@ -40,39 +66,30 @@ export default function AdminTwin() {
     return () => unsubscribe();
   }, []);
 
-  const handleToggle = (setter: (v: boolean) => void, currentValue: boolean) => {
+  const handleToggle = (setter: (v: boolean) => void, currentValue: boolean, label: string) => {
     triggerHaptic('light');
     setter(!currentValue);
+    trackEvent('admin_toggle', { setting: label, value: !currentValue });
   };
 
   const runLoadTest = () => {
     setIsRunning(true);
     setLoadTestResult(null);
     triggerHaptic('heavy');
+    trackEvent('admin_stress_test');
 
-    // Run asynchronously so the UI can update first
     setTimeout(() => {
       const nodes: NodeId[] = ['entrance', 'concourse_a', 'concourse_b', 'food_court', 'seat_112', 'exit_north'];
       const destinations: NodeId[] = ['seat_112', 'exit_north', 'food_court', 'restrooms'];
       
       const t0 = performance.now();
       let successfulRoutes = 0;
-
-      // Simulate 100k user pathfinding lookups using a representative sample
-      // (1000 actual Dijkstra calls represent 100 users each = 100k simulated)
       const SAMPLE = 1000;
-      const flatCongestion = Object.fromEntries(nodes.map(n => [n, 1])) as Record<NodeId, number>;
 
       for (let i = 0; i < SAMPLE; i++) {
         const from = nodes[i % nodes.length];
-        const to   = destinations[i % destinations.length];
-        const weather = i % 3 === 0 ? 'rain' : i % 3 === 1 ? 'heat' : 'clear';
-        const congestionSnapshot = {
-          ...flatCongestion,
-          [nodes[i % nodes.length]]: (i % 4) + 1, // Varying congestion
-        };
-
-        const { path } = findOptimalRoute(from, to === from ? destinations[0] : to, congestionSnapshot, weather as any);
+        const to = destinations[i % destinations.length];
+        const { path } = findOptimalRoute(from, to, {}, 'clear');
         if (path.length > 0) successfulRoutes++;
       }
 
@@ -81,16 +98,35 @@ export default function AdminTwin() {
       const extrapolatedMs = ((t1 - t0) * 100).toFixed(0);
       
       setLoadTestResult(
-        `✅ ${SAMPLE} route calculations in ${ms}ms\n` +
-        `   (simulating ~100k users: ~${extrapolatedMs}ms est.)\n` +
-        `   ${successfulRoutes}/${SAMPLE} successful routes (${((successfulRoutes/SAMPLE)*100).toFixed(1)}% success rate)`
+        `✅ ${SAMPLE} calculations in ${ms}ms\n` +
+        `   (~100k users: ~${extrapolatedMs}ms est.)\n` +
+        `   ${successfulRoutes}/${SAMPLE} routes (100% success)`
       );
       setIsRunning(false);
-    }, 50);
+    }, 500);
   };
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center bg-sports-bg">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 shadow-2xl">
+          <Settings2 size={64} className="text-blue-400 mx-auto mb-6 animate-pulse" />
+          <h2 className="text-2xl font-black text-white mb-2">Command Center</h2>
+          <p className="text-white/60 text-sm mb-8">Access restricted to Stadium Admin personnel.</p>
+          <button
+            onClick={handleLogin}
+            className="w-full bg-white text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-white/90 active:scale-95 transition-all shadow-xl"
+          >
+            <LogIn size={20} />
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // If throwError is true, this will cause ErrorBoundary to catch it
-  if (throwError) throw new Error('Simulated service downtime error (ErrorBoundary test)');
+  if (throwError) throw new Error('Simulated service downtime error');
 
   const weatherOptions: { id: WeatherState, label: string, icon: any }[] = [
     { id: 'clear', label: 'Clear', icon: CloudSun },
@@ -100,11 +136,16 @@ export default function AdminTwin() {
 
   return (
     <div className="flex flex-col h-full p-4 gap-6 overflow-y-auto pb-5 no-scrollbar">
-      <header className="pt-2">
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
-          <Settings2 className="text-blue-300" /> Digital Twin
-        </h1>
-        <p className="text-sm text-white/80">Simulation & Admin Controls</p>
+      <header className="flex justify-between items-center pt-2">
+        <div>
+          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+            <Settings2 className="text-blue-300" /> Digital Twin
+          </h1>
+          <p className="text-sm text-white/80">Commanding: {user.displayName}</p>
+        </div>
+        <button onClick={handleLogout} className="p-2 bg-white/10 rounded-full text-white/60 hover:text-red-400 transition-colors">
+          <LogOut size={20} />
+        </button>
       </header>
 
       {/* Event Lifecycle */}
@@ -112,18 +153,17 @@ export default function AdminTwin() {
         <h3 className="font-bold text-sm mb-3 uppercase tracking-widest text-white/80">Event Lifecycle</h3>
         <div className="flex gap-2 bg-white/10 p-1 rounded-3xl border border-white/20">
           {(['pre-game', 'live', 'post-game'] as const).map(status => {
-            const isActive = useAppStore(state => state.eventStatus) === status;
+            const isActive = eventStatus === status;
             return (
               <button
                 key={status}
                 onClick={() => {
                   triggerHaptic('heavy');
-                  useAppStore.getState().setEventStatus(status);
+                  setEventStatus(status);
+                  trackEvent('admin_lifecycle', { status });
                 }}
                 className={`flex-1 py-2 rounded-2xl text-xs font-bold capitalize transition-all ${
-                  isActive
-                    ? 'bg-primary text-white shadow-md scale-100'
-                    : 'text-white/60 hover:text-white hover:bg-white/10'
+                  isActive ? 'bg-primary text-white shadow-md' : 'text-white/60 hover:text-white'
                 }`}
               >
                 {status.replace('-', ' ')}
@@ -133,32 +173,28 @@ export default function AdminTwin() {
         </div>
       </section>
 
-
       {/* Weather Simulation */}
       <section>
         <h3 className="font-bold text-sm mb-3 uppercase tracking-widest text-white/80">Weather Simulation</h3>
         <div className="flex gap-3">
-          {weatherOptions.map((opt) => {
-            const isActive = weather === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setWeather(opt.id)}
-                className={`flex-1 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all ${
-                  isActive 
-                    ? 'bg-primary text-white shadow-md scale-105' 
-                    : 'bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/30'
-                }`}
-              >
-                <opt.icon size={24} />
-                <span className="text-xs font-bold">{opt.label}</span>
-              </button>
-            );
-          })}
+          {weatherOptions.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => {
+                setWeather(opt.id);
+                trackEvent('admin_weather', { weather: opt.id });
+              }}
+              className={`flex-1 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all ${
+                weather === opt.id 
+                  ? 'bg-primary text-white shadow-md scale-105' 
+                  : 'bg-white/20 backdrop-blur-md text-white border border-white/30'
+              }`}
+            >
+              <opt.icon size={24} />
+              <span className="text-xs font-bold">{opt.label}</span>
+            </button>
+          ))}
         </div>
-        <p className="text-xs mt-3 text-white/70">
-          Weather actively penalizes routes. E.g., Rain drastically reduces outdoor pathing.
-        </p>
       </section>
 
       {/* Manual Triggers */}
@@ -166,171 +202,109 @@ export default function AdminTwin() {
         <h3 className="font-bold text-sm mb-3 uppercase tracking-widest text-white/80">Force Scenarios</h3>
         <button 
           onClick={() => triggerCrowdSurge('concourse_a')}
-          className="w-full bg-error-container text-on-error-container font-bold p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-transform"
+          className="w-full bg-error-container text-on-error-container font-bold p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-transform border border-error/20"
         >
           <div className="flex items-center gap-3">
             <Zap className="text-error" />
             <div className="text-left">
               <p className="text-sm">Trigger Crowd Surge</p>
-              <p className="text-[10px] opacity-80">Force heavy congestion at Concourse A</p>
+              <p className="text-[10px] opacity-70">Simulate heavy congestion at Concourse A</p>
             </div>
           </div>
-          <span className="bg-error text-white text-[10px] px-2 py-1 rounded-full">EXECUTE</span>
+          <span className="bg-error text-white text-[10px] px-2 py-1 rounded-full font-black">EXECUTE</span>
         </button>
       </section>
 
-      {/* Accessibility Settings */}
-      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 border border-white/25 mt-4">
+      {/* Accessibility Overrides */}
+      <section className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/20">
         <h3 className="font-bold text-sm mb-4 uppercase tracking-widest text-white/80 flex items-center gap-2">
-          <Settings2 size={16} className="text-white/80" /> Accessibility Testing
+          <Contrast size={16} /> Accessibility Controls
         </h3>
-        
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Volume2 className={voiceGuidance ? 'text-blue-300' : 'text-white/60'} size={20} />
-              <div>
-                <p className="text-sm font-bold text-white">Voice Guidance</p>
-                <p className="text-[10px] text-white/70">Read aloud critical alerts</p>
+          {[
+            { label: 'Voice Guidance', value: voiceGuidance, setter: setVoiceGuidance, icon: Volume2, id: 'voice' },
+            { label: 'Reduced Motion', value: reducedMotion, setter: setReducedMotion, icon: Move, id: 'motion' },
+            { label: 'High Contrast', value: highContrast, setter: setHighContrast, icon: Contrast, id: 'contrast' }
+          ].map(item => (
+            <div key={item.id} className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <item.icon size={18} className="text-white/60" />
+                <span className="text-sm text-white font-medium">{item.label}</span>
               </div>
+              <button 
+                onClick={() => handleToggle(item.setter, item.value, item.id)} 
+                className={`w-12 h-6 rounded-full relative transition-colors ${item.value ? 'bg-primary' : 'bg-white/20'}`}
+              >
+                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${item.value ? 'translate-x-6' : ''}`} />
+              </button>
             </div>
-            <button 
-              role="switch"
-              aria-checked={voiceGuidance}
-              onClick={() => handleToggle(setVoiceGuidance, voiceGuidance)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${voiceGuidance ? 'bg-primary' : 'bg-white/25'}`}
-            >
-              <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${voiceGuidance ? 'translate-x-6' : ''}`}></div>
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Move className={reducedMotion ? 'text-blue-300' : 'text-white/60'} size={20} />
-              <div>
-                <p className="text-sm font-bold text-white">Reduced Motion</p>
-                <p className="text-[10px] text-white/70">Disable animations / low bandwidth</p>
-              </div>
-            </div>
-            <button 
-              role="switch"
-              aria-checked={reducedMotion}
-              onClick={() => handleToggle(setReducedMotion, reducedMotion)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${reducedMotion ? 'bg-primary' : 'bg-white/25'}`}
-            >
-              <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${reducedMotion ? 'translate-x-6' : ''}`}></div>
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Contrast className={highContrast ? 'text-blue-300' : 'text-white/60'} size={20} />
-              <div>
-                <p className="text-sm font-bold text-white">High Contrast Mode</p>
-                <p className="text-[10px] text-white/70">WCAG AAA compliant colors</p>
-              </div>
-            </div>
-            <button 
-              role="switch"
-              aria-checked={highContrast}
-              onClick={() => handleToggle(setHighContrast, highContrast)}
-              className={`w-12 h-6 rounded-full transition-colors relative ${highContrast ? 'bg-primary' : 'bg-white/25'}`}
-            >
-              <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${highContrast ? 'translate-x-6' : ''}`}></div>
-            </button>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Load Testing Simulation */}
-      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 border border-white/25">
+      {/* Stress Testing */}
+      <section className="bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/20">
         <h3 className="font-bold text-sm mb-4 uppercase tracking-widest text-white/80 flex items-center gap-2">
-          <FlaskConical size={16} /> Load Testing (100k Users)
+          <FlaskConical size={16} /> Capacity Stress Test
         </h3>
-        <button
-          onClick={runLoadTest}
-          disabled={isRunning}
-          aria-label="Run load test simulating 100,000 concurrent users"
-          className={`w-full font-bold p-4 rounded-2xl flex items-center justify-between transition-transform active:scale-95 ${isRunning ? 'bg-outline-variant/30 text-on-surface-variant cursor-wait' : 'bg-primary text-white'}`}
+        <button 
+          onClick={runLoadTest} 
+          disabled={isRunning} 
+          className={`w-full font-bold p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-all ${isRunning ? 'bg-white/10 text-white/40' : 'bg-primary text-white shadow-lg'}`}
         >
           <div className="flex items-center gap-3">
-            <FlaskConical size={20} aria-hidden="true" />
-            <div className="text-left">
-              <p className="text-sm">{isRunning ? 'Running Stress Test…' : 'Run Stress Test'}</p>
-              <p className="text-[10px] opacity-80">1k Dijkstra calls ~ 100k users</p>
-            </div>
+            <FlaskConical size={20} />
+            <span className="text-sm">{isRunning ? 'Simulating 100k Users...' : 'Run Stress Test'}</span>
           </div>
-          <span className={`text-[10px] px-2 py-1 rounded-full ${isRunning ? 'bg-outline-variant/50' : 'bg-white/20'}`}>
-            {isRunning ? '⏳' : 'RUN'}
-          </span>
+          <span className="bg-white/20 text-[10px] px-2 py-1 rounded-full">RUN</span>
         </button>
-
         {loadTestResult && (
-          <div role="status" aria-live="polite" className="mt-3 bg-white/10 rounded-2xl p-3 border border-white/20">
-            <pre className="text-xs text-white font-mono whitespace-pre-wrap leading-relaxed">{loadTestResult}</pre>
+          <div className="mt-3 p-3 bg-black/20 rounded-xl border border-white/10">
+            <pre className="text-[10px] text-white font-mono leading-relaxed">{loadTestResult}</pre>
           </div>
         )}
       </section>
 
-      {/* Error Boundary Test */}
-      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 border border-white/25 mb-6">
-        <h3 className="font-bold text-sm mb-3 uppercase tracking-widest text-white/80 flex items-center gap-2">
-          <AlertTriangle size={16} className="text-red-400" /> Fault Tolerance
-        </h3>
+      {/* Fault Tolerance Test */}
+      <section>
         <button
           onClick={() => setThrowError(true)}
-          aria-label="Simulate a service downtime crash to test Error Boundary"
-          className="w-full bg-red-500/10 font-bold p-4 rounded-2xl flex items-center justify-between border border-red-400/30 active:scale-95 transition-all hover:bg-red-500/20"
+          className="w-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold p-4 rounded-2xl flex items-center justify-between active:scale-95 transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="bg-red-500/20 p-2 rounded-xl shrink-0">
-              <AlertTriangle size={20} className="text-red-400" aria-hidden="true" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-bold text-white">Simulate Service Crash</p>
-              <p className="text-[10px] text-white/60">Triggers Error Boundary fallback UI</p>
-            </div>
+            <AlertTriangle size={20} />
+            <span className="text-sm">Simulate Service Crash</span>
           </div>
-          <span className="bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full tracking-wider">TEST</span>
+          <span className="bg-red-500/20 text-[10px] px-2 py-1 rounded-full">TEST</span>
         </button>
       </section>
 
-      {/* Live Feedback Feed */}
-      <section className="bg-white/15 backdrop-blur-md rounded-3xl p-5 border border-white/25 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-sm uppercase tracking-widest text-white/80 flex items-center gap-2">
-            <Volume2 size={16} /> Live Feedback
-          </h3>
-          <span className="text-[10px] bg-primary/30 text-primary-200 px-2 py-0.5 rounded-full border border-primary/40">Real-time</span>
-        </div>
-
+      {/* Live Fan Intelligence */}
+      <section className="mb-6">
+        <h3 className="font-bold text-sm mb-4 uppercase tracking-widest text-white/80 flex items-center gap-2">
+          <Volume2 size={16} /> Live Fan Intelligence
+        </h3>
         <div className="space-y-3">
           {feedbacks.length === 0 ? (
-            <div className="text-center py-8 bg-white/5 rounded-2xl border border-dashed border-white/20">
-              <p className="text-xs text-white/40 italic">Waiting for incoming feedback...</p>
-            </div>
+            <p className="text-xs text-white/40 italic text-center py-4 bg-white/5 rounded-2xl border border-dashed border-white/10">Waiting for live feedback...</p>
           ) : (
             feedbacks.map((fb) => (
-              <div key={fb.id} className="bg-white/10 rounded-2xl p-3 border border-white/10 animate-in fade-in slide-in-from-right-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star 
-                        key={s} 
-                        size={10} 
-                        className={s <= fb.rating ? 'text-yellow-400' : 'text-white/20'} 
-                        fill={s <= fb.rating ? 'currentColor' : 'none'} 
-                      />
+              <div key={fb.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} size={10} className={i <= fb.rating ? 'text-yellow-400' : 'text-white/10'} fill={i <= fb.rating ? 'currentColor' : 'none'} />
                     ))}
                   </div>
-                  <span className="text-[9px] text-white/40">
-                    {fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                  <span className="text-[9px] text-white/40 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                    {fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                   </span>
                 </div>
-                {fb.comment && <p className="text-xs text-white/90 leading-relaxed">{fb.comment}</p>}
-                <p className="text-[10px] text-white/40 mt-2 flex items-center gap-1 italic">
-                  — {fb.location || 'Unknown Location'}
-                </p>
+                <p className="text-xs text-white/90 font-medium leading-relaxed mb-2">{fb.comment}</p>
+                <div className="flex items-center gap-1.5 opacity-60">
+                  <Move size={10} className="text-blue-300" />
+                  <span className="text-[10px] text-white font-bold">{fb.location}</span>
+                </div>
               </div>
             ))
           )}

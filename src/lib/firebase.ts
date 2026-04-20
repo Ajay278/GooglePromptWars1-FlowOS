@@ -1,7 +1,8 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAnalytics, logEvent, isSupported } from 'firebase/analytics';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -11,19 +12,24 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only if the config is provided (avoids breaking local dev before keys are added)
-let db: ReturnType<typeof getFirestore> | null = null;
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-try {
-  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log("🔥 Firebase initialized successfully.");
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// Analytics is only supported in browser environments
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+
+/**
+ * Professional Event Tracking
+ */
+export const trackEvent = async (eventName: string, params?: object) => {
+  if (typeof window !== 'undefined' && (await isSupported())) {
+    const inst = getAnalytics(app);
+    logEvent(inst, eventName, params);
   } else {
-    console.warn("⚠️ Firebase config missing in .env. Running in local mock mode.");
+    console.log(`[Analytics-Disabled] ${eventName}`, params);
   }
-} catch (e) {
-  console.error("Failed to initialize Firebase:", e);
-}
-
-export { db };
+};

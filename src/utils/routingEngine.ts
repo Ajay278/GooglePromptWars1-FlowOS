@@ -1,12 +1,31 @@
-// Simple graph implementation for stadium nodes
+/**
+ * @file routingEngine.ts
+ * @description Advanced pathfinding logic for FlowOS Smart Stadium.
+ * Uses a modified Dijkstra algorithm to calculate optimal routes considering
+ * real-time congestion, weather conditions, and accessibility constraints.
+ */
+
+/**
+ * Valid nodes within the stadium graph.
+ */
 export type NodeId = 'entrance' | 'concourse_a' | 'concourse_b' | 'food_court' | 'restrooms' | 'seat_112' | 'exit_north';
+
+/**
+ * Weather states that affect routing penalties.
+ */
 export type WeatherState = 'clear' | 'rain' | 'heat';
 
+/**
+ * Represents a connection between two stadium nodes.
+ */
 export interface RouteEdge {
   to: NodeId;
   baseTime: number; // in seconds
 }
 
+/**
+ * The core stadium adjacency list defining the physical layout.
+ */
 export const STADIUM_GRAPH: Record<NodeId, RouteEdge[]> = {
   entrance: [
     { to: 'concourse_a', baseTime: 30 },
@@ -42,10 +61,23 @@ export const STADIUM_GRAPH: Record<NodeId, RouteEdge[]> = {
   ]
 };
 
-// Open-air nodes that are heavily penalized during rain
+/**
+ * Nodes that are exposed to elements. Used for weather-based rerouting.
+ */
 const OUTDOOR_NODES: NodeId[] = ['entrance', 'seat_112', 'exit_north'];
 
-// Calculate optimal path using Dijkstra-like approach, considering dynamic congestion and weather
+/**
+ * Calculates the most efficient path between two points.
+ * 
+ * @param start - The starting node ID.
+ * @param end - The destination node ID.
+ * @param congestionMultipliers - Real-time weights for each node (1.0 = normal).
+ * @param weather - Current weather condition affecting outdoor penalties.
+ * @returns An object containing the ordered list of nodes and total ETA in minutes.
+ * 
+ * @example
+ * findOptimalRoute('entrance', 'seat_112', { concourse_a: 2.0 }, 'rain')
+ */
 export function findOptimalRoute(
   start: NodeId, 
   end: NodeId, 
@@ -66,7 +98,6 @@ export function findOptimalRoute(
   distances[start] = 0;
 
   while (unvisited.size > 0) {
-    // Find node with minimum distance
     let current: NodeId | null = null;
     let minDistance = Infinity;
     for (const node of unvisited) {
@@ -84,12 +115,10 @@ export function findOptimalRoute(
       if (!unvisited.has(neighbor.to)) continue;
 
       let weatherPenalty = 1;
-      // If it's raining and the target node is outdoors, apply a 3x penalty to discourage the route
       if (weather === 'rain' && OUTDOOR_NODES.includes(neighbor.to)) {
         weatherPenalty = 3;
       }
 
-      // Multiply base time by the congestion factor and weather penalty
       const congestionFactor = congestionMultipliers[neighbor.to] || 1;
       const altDistance = distances[current] + (neighbor.baseTime * congestionFactor * weatherPenalty);
 
@@ -100,7 +129,6 @@ export function findOptimalRoute(
     }
   }
 
-  // Build path
   const path: NodeId[] = [];
   let curr: NodeId | null = end;
   while (curr !== null) {
@@ -110,6 +138,6 @@ export function findOptimalRoute(
 
   return { 
     path: path[0] === start ? path : [], 
-    estimatedTime: Math.round(distances[end] / 60) // Return ETA in minutes
+    estimatedTime: Math.round(distances[end] / 60)
   };
 }

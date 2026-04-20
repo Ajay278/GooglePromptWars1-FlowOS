@@ -8,12 +8,18 @@ import { useState } from 'react';
 import SmartExitModal from '../components/transit/SmartExitModal';
 import FeedbackModal from '../components/feedback/FeedbackModal';
 import { MessageSquarePlus } from 'lucide-react';
+import { useEffect } from 'react';
+import { trackEvent } from '../lib/firebase';
 
 export default function Home() {
   const navigate = useNavigate();
   const { weather, reducedMotion, congestion, eventStatus } = useAppStore();
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  useEffect(() => {
+    trackEvent('home_view', { status: eventStatus });
+  }, [eventStatus]);
 
   const quickActions = [
     { name: 'Navigate', icon: Map, color: 'bg-primary-container text-on-primary-container', path: '/navigate' },
